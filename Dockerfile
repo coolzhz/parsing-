@@ -1,3 +1,5 @@
+CMD ["python", "server.py"]
+
 FROM python:3.9-slim
 
 # Установка системных зависимостей
