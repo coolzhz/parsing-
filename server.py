@@ -1,7 +1,6 @@
 from flask import Flask, jsonify, send_file, request
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 import time
@@ -15,6 +14,7 @@ chrome_options = Options()
 chrome_options.add_argument("--headless")  # Запуск в фоновом режиме
 chrome_options.add_argument("--disable-gpu")
 chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-dev-shm-usage")  # Уменьшает использование памяти
 
 # Путь к ChromeDriver
 CHROME_DRIVER_PATH = '/usr/local/bin/chromedriver'  # Путь на Render
@@ -88,53 +88,4 @@ def parse_livescore(league_name):
 
                 # Разделяем счёт по таймам (пример: "1-0 (0-0)")
                 if '(' in score_half:
-                    first_half, second_half = score_half.split('(')
-                    first_half = first_half.strip()
-                    second_half = second_half.replace(')', '').strip()
-                else:
-                    first_half = second_half = "N/A"
-
-                data.append({
-                    'team_home': team_home,
-                    'team_away': team_away,
-                    'score_full': score_full,
-                    'score_first_half': first_half,
-                    'score_second_half': second_half
-                })
-
-            # Сохраняем данные лиги в JSON-файл
-            filename = os.path.join(JSON_FOLDER, f"{league_name}.json".replace('/', '_'))  # Заменяем слэши в названии
-            save_to_json(data, filename)
-
-            return data
-
-    return []
-
-# Маршрут для получения списка лиг
-@app.route('/get-leagues', methods=['GET'])
-def get_leagues_route():
-    leagues = get_leagues()
-    return jsonify(leagues)
-
-# Маршрут для парсинга данных выбранной лиги
-@app.route('/parse-league', methods=['POST'])
-def parse_league():
-    league_name = request.json.get('league_name')
-    if not league_name:
-        return jsonify({"error": "League name is required"}), 400
-
-    data = parse_livescore(league_name)
-    return jsonify(data)
-
-# Маршрут для скачивания JSON-файла по названию лиги
-@app.route('/download-json/<league_name>', methods=['GET'])
-def download_json(league_name):
-    filename = os.path.join(JSON_FOLDER, f"{league_name}.json")
-    if os.path.exists(filename):
-        return send_file(filename, as_attachment=True)
-    else:
-        return jsonify({"error": "File not found"}), 404
-
-# Запуск сервера
-if __name__ == '__main__':
-    app.run(debug=True)
+                    firs
