@@ -23,20 +23,37 @@ html = """
             color: #333;
             text-align: center;
         }
-        .league {
-            margin-bottom: 20px;
-            padding: 10px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        .league-selector {
+            margin: 20px auto;
+            text-align: center;
         }
-        .league h2 {
-            color: #555;
-            margin-bottom: 10px;
+        .league-selector select {
+            padding: 10px;
+            font-size: 16px;
+        }
+        .league-selector button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-left: 10px;
+        }
+        .league-selector button:hover {
+            background-color: #0056b3;
+        }
+        .matches {
+            margin-top: 20px;
         }
         .match {
             padding: 10px;
             border-bottom: 1px solid #ddd;
+            background: white;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
         .match:last-child {
             border-bottom: none;
@@ -49,34 +66,85 @@ html = """
 </head>
 <body>
     <h1>LiveScore Matches</h1>
-"""
 
-# Чтение JSON-файлов и генерация HTML
-for filename in os.listdir(DATA_FOLDER):
-    if filename.endswith(".json"):
-        league_name = filename.replace(".json", "")
-        with open(os.path.join(DATA_FOLDER, filename), "r", encoding="utf-8") as f:
-            matches = json.load(f)
+    <div class="league-selector">
+        <select id="league-select">
+            <option value="">Выберите лигу</option>
+        </select>
+        <button onclick="downloadResults()">Скачать результаты</button>
+    </div>
 
-        html += f"""
-        <div class="league">
-            <h2>{league_name}</h2>
-        """
-        for match in matches:
-            html += f"""
-            <div class="match">
-                <strong>{match['team_home']}</strong> vs <strong>{match['team_away']}</strong> - {match['score_full']}
-                <div class="match-details">
-                    Первый тайм: {match['score_half'].split('(')[0].strip()}<br>
-                    Второй тайм: {match['score_half'].split('(')[1].replace(')', '').strip()}
-                </div>
-            </div>
-            """
-        html += """
-        </div>
-        """
+    <div id="matches" class="matches"></div>
 
-html += """
+    <script>
+        // Загрузка списка лиг
+        async function loadLeagues() {
+            const response = await fetch('/leagues');
+            const leagues = await response.json();
+
+            const select = document.getElementById('league-select');
+            leagues.forEach(league => {
+                const option = document.createElement('option');
+                option.value = league;
+                option.textContent = league;
+                select.appendChild(option);
+            });
+        }
+
+        // Загрузка матчей выбранной лиги
+        async function loadMatches(league) {
+            const response = await fetch(`/leagues/${league}`);
+            const matches = await response.json();
+
+            const matchesDiv = document.getElementById('matches');
+            matchesDiv.innerHTML = '';
+
+            matches.forEach(match => {
+                const matchDiv = document.createElement('div');
+                matchDiv.className = 'match';
+                matchDiv.innerHTML = `
+                    <strong>${match.team_home}</strong> vs <strong>${match.team_away}</strong> - ${match.score_full}
+                    <div class="match-details">
+                        Первый тайм: ${match.score_half.split('(')[0].trim()}<br>
+                        Второй тайм: ${match.score_half.split('(')[1].replace(')', '').trim()}
+                    </div>
+                `;
+                matchesDiv.appendChild(matchDiv);
+            });
+        }
+
+        // Скачивание результатов выбранной лиги
+        async function downloadResults() {
+            const league = document.getElementById('league-select').value;
+            if (!league) {
+                alert('Пожалуйста, выберите лигу.');
+                return;
+            }
+
+            const response = await fetch(`/leagues/${league}`);
+            const matches = await response.json();
+
+            const blob = new Blob([JSON.stringify(matches, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${league}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Инициализация
+        document.getElementById('league-select').addEventListener('change', (event) => {
+            const league = event.target.value;
+            if (league) {
+                loadMatches(league);
+            }
+        });
+
+        loadLeagues();
+    </script>
 </body>
 </html>
 """
@@ -84,3 +152,5 @@ html += """
 # Сохранение HTML-файла
 with open("index.html", "w", encoding="utf-8") as f:
     f.write(html)
+
+print("Статический сайт сгенерирован. Откройте index.html в браузере.")
