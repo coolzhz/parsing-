@@ -1,0 +1,86 @@
+import json
+import os
+
+# Папка с JSON-файлами
+DATA_FOLDER = "leagues_data"
+
+# Генерация HTML
+html = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LiveScore Matches</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .league {
+            margin-bottom: 20px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .league h2 {
+            color: #555;
+            margin-bottom: 10px;
+        }
+        .match {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .match:last-child {
+            border-bottom: none;
+        }
+        .match-details {
+            margin-left: 20px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <h1>LiveScore Matches</h1>
+"""
+
+# Чтение JSON-файлов и генерация HTML
+for filename in os.listdir(DATA_FOLDER):
+    if filename.endswith(".json"):
+        league_name = filename.replace(".json", "")
+        with open(os.path.join(DATA_FOLDER, filename), "r", encoding="utf-8") as f:
+            matches = json.load(f)
+
+        html += f"""
+        <div class="league">
+            <h2>{league_name}</h2>
+        """
+        for match in matches:
+            html += f"""
+            <div class="match">
+                <strong>{match['team_home']}</strong> vs <strong>{match['team_away']}</strong> - {match['score_full']}
+                <div class="match-details">
+                    Первый тайм: {match['score_half'].split('(')[0].strip()}<br>
+                    Второй тайм: {match['score_half'].split('(')[1].replace(')', '').strip()}
+                </div>
+            </div>
+            """
+        html += """
+        </div>
+        """
+
+html += """
+</body>
+</html>
+"""
+
+# Сохранение HTML-файла
+with open("index.html", "w", encoding="utf-8") as f:
+    f.write(html)
